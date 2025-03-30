@@ -50,5 +50,7 @@ A simple and responsive Todo App built with React that allows users to add, edit
 
 The application saves todos to `localStorage` and retrieves them when the page reloads.
 
+## Visit Site
 
+https://todo-app-by-daulat.netlify.app/
 
