@@ -1,134 +1,66 @@
-import { useState, useEffect } from 'react'
-import { FaEdit } from "react-icons/fa";
-import { AiFillDelete } from "react-icons/ai";
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useEffect } from "react";
+import Section from "./components/Section";
+import SectionTabs from "./components/SectionTabs";
+import { loadSections, saveSections } from "./utils/localStorage";
 
 function App() {
-  const [todo, setTodo] = useState("");
-  const [todos, setTodos] = useState([]);
-  const [showFinished, setShowFinished] = useState(true);
+  const [sections, setSections] = useState([]);
+  const [activeSection, setActiveSection] = useState("long");
 
   useEffect(() => {
-    const todoString = localStorage.getItem("todos");
-    if (todoString) {
-      const todos = JSON.parse(todoString);
-      setTodos(todos);
+    const saved = loadSections();
+    if (saved) {
+      setSections(saved);
+    } else {
+      setSections([
+        { id: "long", title: "Long Term", todos: [] },
+        { id: "current", title: "Current", todos: [] },
+        { id: "notes", title: "Notes", content: "" }
+      ]);
     }
   }, []);
 
-  const saveToLS = (newTodos) => {
-    localStorage.setItem("todos", JSON.stringify(newTodos));
+  const updateSection = (id, todos, content) => {
+    const updated = sections.map((sec) => {
+      if (sec.id === id) {
+        return {
+          ...sec,
+          todos: todos ?? sec.todos,
+          content: content ?? sec.content
+        };
+      }
+      return sec;
+    });
+
+    setSections(updated);
+    saveSections(updated);
   };
 
-  const toggleFinished = () => {
-    setShowFinished(!showFinished);
-  };
-
-  const handleEdit = (e, id) => {
-    const t = todos.find((i) => i.id === id);
-    setTodo(t.todo);
-    const newTodos = todos.filter((item) => item.id !== id);
-    setTodos(newTodos);
-    saveToLS(newTodos);
-  };
-
-  const handleDelete = (e, id) => {
-    const newTodos = todos.filter((item) => item.id !== id);
-    setTodos(newTodos);
-    saveToLS(newTodos);
-  };
-
-  const handleAdd = () => {
-    const newTodos = [...todos, { id: uuidv4(), todo, isCompleted: false }];
-    setTodos(newTodos);
-    setTodo("");
-    saveToLS(newTodos);
-  };
-
-  const handleChange = (e) => {
-    setTodo(e.target.value);
-  };
-
-  const handleCheckbox = (e) => {
-    const id = e.target.name;
-    const index = todos.findIndex((item) => item.id === id);
-    const newTodos = [...todos];
-    newTodos[index].isCompleted = !newTodos[index].isCompleted;
-    setTodos(newTodos);
-    saveToLS(newTodos);
-  };
+  const active = sections.find((s) => s.id === activeSection);
 
   return (
-    <>
-      <div className="mx-3 md:container md:mx-auto my-15 rounded-xl p-5 bg-violet-100 min-h-[80vh] md:w-[35%]">
-        <h1 className='font-bold text-center text-3xl'>Todo App</h1>
+    <div className="min-h-screen flex flex-col items-center px-3 py-4">
 
-        <div className="addTodo my-5 flex flex-col gap-4">
-          <div className="flex">
-            <input
-              onChange={handleChange}
-              value={todo}
-              type="text"
-              className='w-full border bg-violet-50 border-gray-500 rounded-full px-5 py-1'
-              placeholder='Enter Your Tasks'
-            />
-            <button
-              onClick={handleAdd}
-              disabled={todo.length <= 3}
-              className='bg-red-800 mx-2 rounded-full hover:bg-red-950 disabled:bg-red-800 p-4 py-2 text-sm font-bold text-white'
-            >
-              Save
-            </button>
-          </div>
-        </div>
+      {/* TITLE */}
+      <h1 className="text-2xl font-bold text-gray-800 mb-3">
+        Todo App
+      </h1>
 
-        <input
-          className='my-4'
-          id='show'
-          onChange={toggleFinished}
-          type="checkbox"
-          checked={showFinished}
-        />
-        <label className='mx-2' htmlFor="show">Show Finished</label>
+      {/* TABS */}
+      <SectionTabs
+        sections={sections}
+        active={activeSection}
+        setActive={setActiveSection}
+      />
 
-        <div className='h-[1px] bg-black opacity-15 w-[90%] mx-auto my-2'></div>
-
-        <h2 className='text-2xl font-bold'>Your Tasks</h2>
-
-        <div className="todos">
-          {todos.length === 0 && <div className='m-5'>No Todos to display</div>}
-          {todos.map((item) => (
-            (showFinished || !item.isCompleted) && (
-              <div key={item.id} className="todo flex my-3 justify-between">
-                <div className='flex gap-5'>
-                  <input
-                    name={item.id}
-                    onChange={handleCheckbox}
-                    type="checkbox"
-                    checked={item.isCompleted}
-                  />
-                  <div className={item.isCompleted ? "line-through" : ""}>{item.todo}</div>
-                </div>
-                <div className="buttons flex h-full">
-                  <button
-                    onClick={(e) => handleEdit(e, item.id)}
-                    className='bg-red-800 hover:bg-red-950 p-2 py-1 text-sm font-bold text-white rounded-md mx-1'
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(e, item.id)}
-                    className='bg-red-800 hover:bg-red-950 p-2 py-1 text-sm font-bold text-white rounded-md mx-1'
-                  >
-                    <AiFillDelete />
-                  </button>
-                </div>
-              </div>
-            )
-          ))}
-        </div>
+      {/* ACTIVE SECTION */}
+      <div className="w-full flex justify-center">
+        {active && (
+          <Section section={active} updateSection={updateSection} />
+        )}
       </div>
-    </>
+
+    </div>
   );
 }
 
